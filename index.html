@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Do you want to live?</title>
+  <style>
+    :root { --text:#eaf6ff; --accent:#86f1ff; }
+    html,body{height:100%;margin:0;background:#040812;color:var(--text);overflow:hidden;font-family:ui-serif,Georgia,Cambria,"Times New Roman",Times,serif}
+
+    /* Layers */
+    canvas#bg{position:fixed; inset:0; width:100vw; height:100vh; display:block; background:#040812; z-index:0}
+    .blackout{position:fixed; inset:0; z-index:2; pointer-events:none;
+      background:radial-gradient(closest-side, rgba(0,0,0,0) 0%, rgba(0,0,0,.35) 40%, rgba(0,0,0,.92) 100%);
+      opacity:0; transition:opacity 900ms ease}
+    .whisper{position:fixed; inset:0; z-index:3; pointer-events:none; opacity:0}
+
+    /* UI */
+    .ui{position:fixed; inset:0; display:grid; place-items:center; padding:2rem; pointer-events:auto; z-index:10}
+    .stack{ text-align:center; pointer-events:auto; position:relative; }
+
+    h1{ margin:0 0 1.25rem 0; font-size:clamp(2rem,6vw + .5rem,6rem); font-weight:700;
+        text-shadow:0 0 26px rgba(134,241,255,.55), 0 0 2px rgba(255,255,255,.85);
+        opacity:0; animation:fadeInUp 700ms ease-out forwards; animation-delay:80ms }
+    .btn{ display:inline-block; min-width:9ch; padding:.8rem 1.85rem; font-size:clamp(1rem,2vw + .3rem,2rem);
+          border:1px solid rgba(134,241,255,1); color:var(--text);
+          background:linear-gradient(180deg, rgba(9,31,48,.98), rgba(6,20,34,1));
+          border-radius:12px; box-shadow:0 0 0 1px rgba(134,241,255,.6) inset, 0 0 24px rgba(134,241,255,.38), 0 0 120px rgba(41,182,246,.34);
+          cursor:pointer; opacity:0; transform:translateY(6px); animation:fadeInUp 720ms cubic-bezier(.16,1,.3,1) forwards; animation-delay:180ms; position:relative; z-index:11; pointer-events:auto }
+    .btn:hover{ border-color:var(--accent); box-shadow:0 0 0 1px rgba(134,241,255,.7) inset, 0 0 36px rgba(134,241,255,.48), 0 0 140px rgba(41,182,246,.36); transform:translateY(0) scale(1.02) }
+
+    @keyframes fadeInUp{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+
+    /* Intro Echos */
+    .echoWrap{ position:relative; display:inline-block; }
+    .echo{ position:absolute; left:0; right:0; top:0; filter:blur(2px); opacity:0; mix-blend-mode:screen; pointer-events:none !important; }
+    @keyframes echoTrail{ 0%{opacity:.35; transform:translateY(0) scale(1)} 60%{opacity:.18; transform:translateY(6px) scale(1.02)} 100%{opacity:0; transform:translateY(12px) scale(1.04)} }
+
+    /* Whispers */
+    .wItem{ position:absolute; white-space:nowrap; font-size:clamp(0.9rem,1.8vw,1.4rem); color:#d1f0ff; opacity:0;
+            text-shadow:0 0 22px rgba(120,200,255,.35),0 0 4px rgba(255,255,255,.7);
+            filter:blur(1.8px) contrast(120%); mix-blend-mode:screen;
+            transform:translate(-50%,-50%) rotate(var(--rot)) skewY(var(--sk)); }
+    .wItem.show{ animation:whisperAnim 3200ms ease-in-out forwards; }
+    @keyframes whisperAnim{ 0%{opacity:0; filter:blur(9px)} 20%{opacity:.52; filter:blur(1.5px)} 65%{opacity:.46; filter:blur(3px)} 100%{opacity:0; filter:blur(11px)} }
+
+    .credit{ position:fixed; right:12px; bottom:10px; font-size:12px; opacity:.55; z-index:1 }
+  </style>
+</head>
+<body>
+  <canvas id="bg" aria-hidden="true"></canvas>
+
+  <div class="ui" role="presentation">
+    <div class="stack" id="stack">
+      <div class="echoWrap">
+        <h1 id="title">Do you want to live?</h1>
+      </div>
+      <div class="echoWrap" style="display:block; margin-top:.6rem">
+        <button class="btn" id="go" type="button" aria-label="Confirm" tabindex="0">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="whisper" id="whisper"></div>
+  <div class="blackout" id="blackout"></div>
+  <div class="credit">Cosmic vortex · click "Yes"</div>
+
+  <!-- Audio files (put into /sounds/) -->
+  <audio id="ambient" src="sounds/space_ambient.mp3" loop preload="auto"></audio>
+
+  <script>
+    const NEXT_URL='choose.html';
+    const canvas=document.getElementById('bg'); const ctx=canvas.getContext('2d');
+    const blackout=document.getElementById('blackout');
+    const goBtn=document.getElementById('go'); const uiStack=document.getElementById('stack');
+    const whisperBox=document.getElementById('whisper'); const titleEl=document.getElementById('title');
+    const ambient=document.getElementById('ambient');
+
+    // Only 2 whisper sources
+    const WHISPER_SOURCES = [
+      'sounds/whisper1.mp3',
+      'sounds/whisper1_rev.mp3'
+    ];
+
+    /* === Canvas setup, stars, vortex, etc. (gleich wie vorher) === */
+    let w,h,cx,cy,dpr; let reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function resize(hiRes=false){ const base=Math.min(2,devicePixelRatio||1); dpr=hiRes?Math.min(2.5,base*1.5):base;
+      w=canvas.width=Math.floor(innerWidth*dpr); h=canvas.height=Math.floor(innerHeight*dpr);
+      canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px';
+      cx=w/2; cy=h/2; drawBackdrop(); buildStars(); if(!warp.active) spawn(); }
+    addEventListener('resize',()=>{clearTimeout(resize.t);resize.t=setTimeout(()=>resize(warp.active),120);},{passive:true});
+
+    function drawBackdrop(){ ctx.clearRect(0,0,w,h);
+      const g1=ctx.createRadialGradient(cx,cy*0.9,Math.min(w,h)*0.02,cx,cy*0.9,Math.max(w,h)*0.85);
+      g1.addColorStop(0,'rgba(0,90,140,.14)'); g1.addColorStop(0.55,'rgba(0,30,50,.10)'); g1.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g1; ctx.fillRect(0,0,w,h); }
+
+    const stars=[]; function buildStars(){ stars.length=0; for(let i=0;i<140;i++){ stars.push({x:Math.random()*w,y:Math.random()*h,r:(Math.random()*1.2+.2)*dpr,a:Math.random()*6.28}); } }
+    function renderStars(){ ctx.save(); ctx.globalCompositeOperation='screen'; for(const s of stars){ s.a+=0.01; const tw=.75+Math.sin(s.a)*.25; ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,'+(0.12+Math.random()*0.06)+')'; ctx.arc(s.x,s.y,s.r*tw,0,Math.PI*2); ctx.fill(); } ctx.restore(); }
+
+    const particles=[]; function spawn(){ particles.length=0; const arms=4; const maxR=Math.min(w,h)*.6; const count=Math.min(1100,Math.floor((innerWidth*innerHeight)/2100));
+      for(let i=0;i<count;i++){ const arm=i%arms; const t=Math.random()*Math.PI*2 + arm*(Math.PI*2/arms);
+        const r=(Math.random()**.7)*maxR; const omega=(0.00006+Math.random()*0.00045)*(1.5-r/maxR);
+        const hue=185+Math.random()*(205-185);
+        particles.push({r,t,omega,baseOmega:omega,noise:Math.random()*1000,hue,alpha:.22+Math.random()*.5,prx:cx+r*Math.cos(t),pry:cy+r*Math.sin(t)}); } }
+
+    const warp={active:false,t:0,duration:5600,scale:1,swirl:0,speed:1};
+    function step(dt){ ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.fillStyle='rgba(4,8,18,.08)'; ctx.fillRect(0,0,w,h); ctx.restore(); renderStars();
+      ctx.save(); if(warp.active){ warp.t+=dt; const kRaw=Math.min(1,warp.t/warp.duration);
+        const k=(kRaw<0.5)?(4*kRaw*kRaw*kRaw):(1-Math.pow(-2*kRaw+2,3)/2);
+        warp.scale=1+k*6.0; warp.swirl=k*1.8; warp.speed=1+k*2.6;
+        blackout.style.opacity=(kRaw>0.35?((kRaw-0.35)/0.65*0.9):0).toFixed(3);
+        ctx.translate(cx,cy); ctx.scale(warp.scale,warp.scale); ctx.translate(-cx,-cy); }
+      ctx.globalCompositeOperation='lighter'; const speedMul=warp.active?warp.speed:1;
+      for(const p of particles){ const extra=warp.active?(0.0012+warp.swirl*0.0015):0; p.t+=(p.baseOmega*speedMul+extra)*dt; p.noise+=0.0025*dt;
+        const wobble=(Math.sin(p.noise*1.7)+Math.cos(p.noise*1.1))*.5; const inward=warp.active?(0.994-Math.min(0.022,(warp.t/warp.duration)*0.022)):0.988;
+        const r=p.r*(inward+wobble*0.012); const x=cx+r*Math.cos(p.t), y=cy+r*Math.sin(p.t);
+        ctx.beginPath(); ctx.moveTo(p.prx,p.pry); ctx.lineTo(x,y);
+        ctx.strokeStyle=`hsla(${p.hue},100%,70%,${p.alpha})`; ctx.lineWidth=0.9*dpr; ctx.stroke(); p.prx=x; p.pry=y; }
+      ctx.restore(); }
+
+    let last=performance.now(); function animate(now){ const dt=Math.min(32,now-last); last=now; step(dt); requestAnimationFrame(animate); }
+
+    /* Echo Intro */
+    function addEcho(target){ const wrap=target.parentElement; const copies=5; for(let i=0;i<copies;i++){ const clone=target.cloneNode(true); clone.classList.add('echo'); clone.setAttribute('aria-hidden','true'); clone.tabIndex=-1; const dur=800+i*220; const y=2+i*2; clone.style.opacity='0'; clone.style.filter='blur(2px)'; clone.style.animation=`echoTrail ${dur}ms ease-out forwards`; clone.style.transform=`translateY(${y}px)`; wrap.appendChild(clone); setTimeout(()=>clone.remove(),dur+120); } }
+
+    /* Whispers */
+    const RAW_LINES=['then choose how you live and prove your worth','its an illusion','initizialze','reboot','brain funktictons stabalized'];
+    function leet(s){return s.replace(/a/gi,'4').replace(/e/gi,'3').replace(/i/gi,'1').replace(/o/gi,'0').replace(/s/gi,'5').replace(/t/gi,'7').replace(/l/gi,'|').replace(/b/gi,'8');}
+    const reverse=s=>s.split('').reverse().join('');
+    function distort(s){ const COMB=['\\u0301','\\u0302','\\u0336','\\u0358','\\u034f','\\u0334']; let out=s; const m=Math.random(); if(m<0.34) out=out.split(' ').map(w=>Math.random()<0.5?w.split('').reverse().join(''):w).join(' '); else if(m<0.72) out=leet(out); out=out.split('').map(ch=>{ if(/\\s/.test(ch)||Math.random()>0.18) return ch; return ch+COMB[Math.floor(Math.random()*COMB.length)]; }).join(''); if(Math.random()<0.7){ const glyphs=['∷','▞','▚','░','▒','▓','▁','▂','▃','▅','▆','▇','◆','◇','•','·']; const idx=Math.floor(Math.random()*out.length); out=out.slice(0,idx)+' '+glyphs[Math.floor(Math.random()*glyphs.length)]+' '+out.slice(idx);} return out; }
+
+    function placeWhispers(){ whisperBox.innerHTML=''; const count=10; for(let i=0;i<count;i++){ const el=document.createElement('div'); el.className='wItem'; const base=RAW_LINES[i%RAW_LINES.length]; el.textContent=distort(base); const px=6+Math.random()*88; const py=6+Math.random()*88; el.style.left=px+'vw'; el.style.top=py+'vh'; el.style.setProperty('--rot',(Math.random()*12-6)+'deg'); el.style.setProperty('--sk',(Math.random()*8-4)+'deg'); whisperBox.appendChild(el);} }
+
+    function playAmbient(){ if(!ambient) return; try{ if(ambient.paused){ ambient.volume=0.22; ambient.play(); } }catch(_){} }
+    function playWhisper(volume=0.35){ const src=WHISPER_SOURCES[Math.floor(Math.random()*WHISPER_SOURCES.length)]; const a=new Audio(src); a.volume=volume; a.playbackRate=0.95+Math.random()*0.15; a.play().catch(()=>{}); }
+
+    function triggerWhisperWaves(totalWaves=3){ let wave=0; const runWave=()=>{ placeWhispers(); whisperBox.style.opacity=1; playWhisper(0.32); setTimeout(()=>playWhisper(0.24),350); const items=[...whisperBox.querySelectorAll('.wItem')]; let delay=0; items.forEach(el=>{ setTimeout(()=>{ el.classList.add('show'); },delay); delay+=380; }); setTimeout(()=>{ whisperBox.style.opacity=0; }, delay+3200); wave++; if(wave<totalWaves){ setTimeout(runWave,delay+3600); } }; runWave(); }
+
+    resize(false); drawBackdrop(); buildStars(); spawn(); requestAnimationFrame(animate);
+    addEcho(titleEl); addEcho(goBtn);
+
+    goBtn.addEventListener('click',()=>{ if(warp.active) return; goBtn.disabled=true; resize(true); warp.active=true; warp.t=0;
+      setTimeout(()=>{ uiStack.style.transition='opacity 260ms ease, transform 260ms ease'; uiStack.style.opacity='0'; uiStack.style.transform='scale(.985) translateY(4px)'; },220);
+      playAmbient(); triggerWhisperWaves(3);
+      setTimeout(()=>{ window.location.href=NEXT_URL; }, warp.duration+150); });
+  </script>
+</body>
+</html>

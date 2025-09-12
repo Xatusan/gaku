@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Overview</title>
+<style>
+:root{ --bg:#060910; --ink:#e9f0ff; --muted:#a8b4c8; --panel:#0b1524; --edge:#1b2434; --hi:#86F1FF; --shadow:0 18px 40px #000a; }
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+*{box-sizing:border-box}
+.page{min-height:100vh; display:grid; grid-template-rows:auto 1fr auto}
+header{position:sticky; top:0; z-index:10; backdrop-filter:blur(8px); background:linear-gradient(180deg, #0b1422cc, #0b142288); border-bottom:1px solid #19314a}
+.headerbar{display:flex; gap:16px; align-items:center; padding:12px 16px}
+.headerbar h1{margin:0; font-size:clamp(1.15rem,2.2vw,1.6rem); text-shadow:0 0 18px rgba(134,241,255,.25)}
+.headerbar .sp{flex:1}
+main{min-height:0; display:grid; grid-template-columns:1.2fr .8fr; gap:16px; padding:16px}
+@media(max-width:900px){ main{grid-template-columns:1fr; gap:12px} }
+.panel{background:linear-gradient(180deg,#0e1b2b,#0a1322); border:1px solid #1b2a42; border-radius:16px; box-shadow:var(--shadow); padding:14px}
+.panel h2{margin:0 0 8px 0; font-size:1rem; letter-spacing:.02em; color:#cfe7ff}
+.hero{display:grid; grid-template-columns:240px 1fr; gap:24px; align-items:start;}
+.hero .art{width:100%; height:340px; max-width:340px; display:grid; place-items:center; border:1.5px solid #243551; border-radius:18px; background:#0b1626; margin-bottom:32px;}
+.hero .art img{max-width:100%; max-height:100%; object-fit:contain; border-radius:16px; filter:drop-shadow(0 0 14px rgba(250,216,96,.28)); transition: transform .3s, box-shadow .3s, border-color .3s;}
+.hero .art:hover img{transform:scale(1.04); box-shadow:0 0 18px #f9d76c, 0 0 32px #f9d76c; border-color:rgba(250,216,96,0.7);}
+.hero img{max-width:100%; max-height:100%; object-fit:contain; filter:drop-shadow(0 0 14px rgba(250,216,96,.28))}
+.hero .meta{display:flex; flex-direction:column; gap:6px}
+.hero .name{font-weight:900; font-size:1.25rem}
+.hero .class{color:#a9bed6}
+.hero .abilities{display:flex; flex-wrap:wrap; gap:8px}
+.chip{border:1px solid #2c4a6f; background:#0b1c2c; padding:6px 10px; border-radius:999px; font-size:.9rem}
+.group{margin-top:12px}
+.group h3{margin:.25rem 0 .5rem 0; color:#d9ecff; font-size:1rem; letter-spacing:.02em}
+.grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+@media(max-width:720px){ .grid{grid-template-columns:repeat(2,1fr)}}
+.card{background:#0c1727; border:1px solid #20324f; border-radius:12px; padding:10px}
+.card .k{font-size:12px; color:#9fb1d6}
+.card .v{font-weight:900; font-size:18px}
+
+/* Trait flip */
+.tarow{display:grid; grid-template-columns:repeat(2,minmax(220px, 280px)); gap:18px; justify-content:start}
+@media(max-width:640px){ .tarow{grid-template-columns:1fr} }
+.tarot{perspective:1400px; width:100%; aspect-ratio:3/5; cursor:pointer}
+.tarot .inner{position:relative; width:100%; height:100%}
+.face{position:absolute; inset:0; border-radius:18px; border:1px solid #1b2434; overflow:hidden; box-shadow:var(--shadow); backface-visibility:hidden; transform-style:preserve-3d; transition: transform .9s cubic-bezier(.22,.61,.36,1), opacity .45s ease}
+.back{transform:rotateY(0deg); opacity:1; background:linear-gradient(135deg,#11192b,#0a111d); display:grid; place-items:center; font-weight:900; font-size:42px; color:#c0d8ffdd; text-shadow:0 0 18px #8bf}
+.front{transform:rotateY(180deg); opacity:0; background:linear-gradient(180deg,#0c1322ee,#0a111dde); display:flex}
+.tarot.revealed .back{transform:rotateY(-180deg); opacity:0}
+.tarot.revealed .front{transform:rotateY(0deg); opacity:1}
+.foil{position:absolute; inset:0; mix-blend-mode:screen; opacity:.85; pointer-events:none; background:conic-gradient(from 0deg, #00d0ff22,#9a6bff22,#28e8b722,#00d0ff22); filter:blur(14px)}
+.scan{position:absolute; inset:0; mix-blend-mode:screen; opacity:.2; pointer-events:none; background:repeating-linear-gradient(180deg,#ffffff10 0 2px, transparent 2px 4px)}
+.content{position:relative; padding:14px; display:flex; flex-direction:column; gap:8px; width:100%}
+.die{position:absolute; left:50%; top:8px; transform:translateX(-50%); width:50px; height:50px; display:grid; place-items:center; border-radius:12px; background:linear-gradient(180deg,#0f1729,#0b1220); border:1px solid #2a3650; font-weight:900}
+.tier{text-align:center; font-weight:900; margin-top:60px}
+.tname{text-align:center; font-weight:900; font-size:20px}
+.tdesc{text-align:center; color:#a8b4c8; margin:0}
+.tflv{text-align:center; font-style:italic; color:#c8d4ee; margin-top:auto}
+
+/* diagnostics */
+#diag{position:fixed; left:12px; bottom:12px; background:#0b1626e6; border:1px solid #294462; color:#cfe7ff; border-radius:10px; padding:10px; font:12px ui-monospace,Menlo,Consolas; max-width:46ch; display:none; z-index:9999; white-space:pre-wrap}
+#diag b{color:#86F1FF}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="headerbar">
+      <h1>Overview</h1>
+      <div class="sp"></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Character</h2>
+      <div class="hero">
+        <div class="art"><img id="art" alt=""></div>
+        <div class="meta">
+          <div class="name" id="pname">—</div>
+          <div class="class" id="pclass">—</div>
+          <div class="abilities" id="pabilities"></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Vitals</h3>
+        <div class="grid" id="vitalGrid"></div>
+      </div>
+
+      <div class="group">
+        <h3>Combat</h3>
+        <div class="grid" id="combatGrid"></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h2>Traits</h2>
+      <div class="tarow">
+        <article class="tarot" id="card1" tabindex="0" aria-label="Gift I" role="button">
+          <div class="inner">
+            <div class="face back"><div class="foil"></div><div class="scan"></div>ᛉ</div>
+            <div class="face front"><div class="content" id="front1"></div><div class="scan"></div></div>
+          </div>
+        </article>
+        <article class="tarot" id="card2" tabindex="0" aria-label="Gift II" role="button">
+          <div class="inner">
+            <div class="face back"><div class="foil"></div><div class="scan"></div>ᛉ</div>
+            <div class="face front"><div class="content" id="front2"></div><div class="scan"></div></div>
+          </div>
+        </article>
+      </div>
+      <div class="hint">Flip each card once to reveal your gifts.</div>
+      <div style="margin-top:24px; text-align:center;">
+  <button id="exportBtn" style="padding:8px 18px; border-radius:10px; background:#0b1626; color:#e9f0ff; border:1px solid #86F1FF; font-size:1rem; cursor:pointer; box-shadow:0 0 8px #86F1FF44;">Print this document</button>
+      </div>
+    </aside>
+  </main>
+
+  <footer style="padding:12px 16px; color:#9fb1d6; border-top:1px solid #19314a">
+    Your path is set. Traits finalize on reveal.
+  </footer>
+</div>
+
+<audio id="ambient" src="sounds/space_ambient.mp3" autoplay loop muted playsinline preload="auto"></audio>
+<div id="diag"></div>
+
+<!-- Load external traits (must NOT contain <script> wrapper) -->
+<script src="traits.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// Save character function (restored)
+window.saveCharacter = function(character) {
+  try {
+    localStorage.setItem('character', JSON.stringify(character));
+    sessionStorage.setItem('character', JSON.stringify(character));
+    localStorage.setItem('character.name', character.name);
+    localStorage.setItem('character.className', character.className);
+    localStorage.setItem('character.class', character.class);
+    localStorage.setItem('character.abilities', JSON.stringify(character.abilities));
+    localStorage.setItem('character.attributes', JSON.stringify(character.attributes));
+    localStorage.setItem('character.stats', JSON.stringify(character.attributes));
+  } catch (err) {}
+};
+  "use strict";
+
+  /* error → overlay */
+  window.onerror = function(msg, src, line, col){
+    const d=document.getElementById('diag'); d.style.display='block';
+    d.textContent += "\\nJS Error: " + msg + " @ " + (src||'<inline>') + ":" + line + ":" + col;
+  };
+
+  /* Ambient boot */
+  const amb = document.getElementById('ambient');
+  async function bootAudio(){
+    try{
+      amb.volume=.24;
+      if (sessionStorage.getItem('ambientUnlock')==='1'){ amb.muted=false; await amb.play(); }
+      else { await amb.play().catch(()=>{}); amb.muted=true;
+        const once=()=>{ amb.muted=false; amb.play().catch(()=>{}); document.removeEventListener('pointerdown',once); document.removeEventListener('keydown',once); };
+        document.addEventListener('pointerdown',once,{once:true});
+        document.addEventListener('keydown',once,{once:true});
+      }
+    }catch(e){}
+  }
+  addEventListener('DOMContentLoaded', bootAudio, {once:true});
+  addEventListener('pageshow', bootAudio, {once:true});
+
+  /* Character data */
+  // Export as image or PDF
+  document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('exportBtn');
+    if (btn) {
+      btn.addEventListener('click', async function() {
+        try {
+          const container = document.querySelector('.page');
+          if (!container) throw new Error('Page container not found.');
+          // Wait for all images to load
+          const images = container.querySelectorAll('img');
+          await Promise.all(Array.from(images).map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(resolve => { img.onload = img.onerror = resolve; });
+          }));
+          window.scrollTo(0,0);
+          html2canvas(container).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = imgData;
+            link.download = 'overview.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }).catch(e => {
+            alert('Export failed: ' + e.message);
+          });
+        } catch (err) {
+          alert('Export failed: ' + err.message);
+        }
+      });
+    }
+  });
+  const safeJSON = s => { try { return JSON.parse(s); } catch { return null; } };
+  // Always prefer sessionStorage if available, then localStorage
+  let characterData = safeJSON(sessionStorage.getItem('character'));
+  if (!characterData || !characterData.name) {
+    characterData = safeJSON(localStorage.getItem('character'));
+  }
+  characterData = characterData || {};
+
+  const NAME       = characterData.name || localStorage.getItem('character.name') || '—';
+  const CLASS_NAME = characterData.className || localStorage.getItem('character.className') || '—';
+  const RAW_SLUG   = characterData.class || localStorage.getItem('character.class') || '';
+  const SLUG       = RAW_SLUG.toLowerCase().replace(/[^a-z0-9]+/g,'').trim();
+  const BASE_STATS = characterData.stats || characterData.attributes || safeJSON(localStorage.getItem('character.stats')) || safeJSON(localStorage.getItem('character.attributes')) || {};
+  const STATS      = Object.assign({STR:8,AGI:8,END:8,SPC:6,INT:6,WIS:8}, BASE_STATS);
+  const ABILITIES  = Array.isArray(characterData.abilities) ? characterData.abilities : safeJSON(localStorage.getItem('character.abilities')) || [];
+
+  document.getElementById('pname').textContent  = NAME;
+  document.getElementById('pclass').textContent = CLASS_NAME;
+  const abilWrap = document.getElementById('pabilities');
+  // Ability cost mapping
+  const ABILITY_COSTS = {
+    'Sword Slash': { type: 'STA', cost: 5 },
+    'Stand Firm': { type: 'STA', cost: 4 },
+    'Curve Slash': { type: 'STA', cost: 7 },
+    'Fury': { type: 'STA', cost: 5 },
+    'Wild Hit': { type: 'STA', cost: 7 },
+    'War Cry': { type: 'STA', cost: 6 },
+    'Iaijutsu': { type: 'STA', cost: 7 },
+    'Focus': { type: 'STA', cost: 4 },
+    'Calm Strike': { type: 'STA', cost: 5 },
+    'Thrust': { type: 'STA', cost: 5 },
+    'Jab': { type: 'STA', cost: 3 },
+    'Spear Swipe': { type: 'STA', cost: 7 },
+    'Drake Jab': { type: 'STA', cost: 5 },
+    'Scale Armor': { type: 'STA', cost: 4 },
+    'Drake Roar': { type: 'STA', cost: 7 },
+    'Kunai Toss': { type: 'STA', cost: 4 },
+    'Smoke Puff': { type: 'STA', cost: 5 },
+    'Soft Step': { type: 'STA', cost: 4 },
+    'Shadow Dagger': { type: 'STA', cost: 5 },
+    'Shadow Veil': { type: 'STA', cost: 6 },
+    'Shadow Step': { type: 'STA', cost: 7 },
+    'Somersault Strike': { type: 'STA', cost: 6 },
+    'Spin Kick': { type: 'STA', cost: 5 },
+    'Flip': { type: 'STA', cost: 4 },
+    'Chain Throw': { type: 'STA', cost: 5 },
+    'Chain Whip': { type: 'STA', cost: 6 },
+    'Chain Bind': { type: 'STA', cost: 7 },
+    'Guard Stance': { type: 'STA', cost: 4 },
+    'Challenge': { type: 'STA', cost: 5 },
+    'Steadfast': { type: 'STA', cost: 5 },
+    'Flame Snap': { type: 'MP', cost: 5 },
+    'Fire Flicker': { type: 'MP', cost: 3 },
+    'Cinder Puff': { type: 'MP', cost: 5 },
+    'Ember Glint': { type: 'MP', cost: 3 },
+    'Spark': { type: 'MP', cost: 3 },
+    'Breeze': { type: 'MP', cost: 3 },
+    'Chain Spark': { type: 'MP', cost: 7 },
+    'Breezy Flow': { type: 'MP', cost: 5 },
+    'Frost Pebble': { type: 'MP', cost: 3 },
+    'Icicle': { type: 'MP', cost: 5 },
+    'Cold Gust': { type: 'MP', cost: 7 },
+    'Cool Mist': { type: 'MP', cost: 5 },
+    'Shard': { type: 'MP', cost: 5 },
+    'Shard Guard': { type: 'MP', cost: 5 },
+    'Shard Shield': { type: 'MP', cost: 7 },
+    'Shard Spike': { type: 'MP', cost: 10 },
+    'Blood Gift': { type: 'MP', cost: 5, alt: { type: 'LP', cost: 4 } },
+    'Vein Grip': { type: 'MP', cost: 7, alt: { type: 'LP', cost: 5 } },
+    'Sanguine Burst': { type: 'MP', cost: 10, alt: { type: 'LP', cost: 7 } },
+    'Drain': { type: 'MP', cost: 7, alt: { type: 'LP', cost: 5 } },
+    'Ancestor Whisper': { type: 'MP', cost: 5 },
+    'Spirit Pulse': { type: 'MP', cost: 5 },
+    'Spirit Friend': { type: 'MP', cost: 7 },
+    "Ancestor's Aid": { type: 'MP', cost: 10 },
+    'Totem Place': { type: 'MP', cost: 5 },
+    'Spirit Chant': { type: 'MP', cost: 5 },
+    'Great Totem': { type: 'MP', cost: 10 },
+    'Minor Rain': { type: 'MP', cost: 5 },
+    'Glimpse': { type: 'MP', cost: 3 },
+    'Coin Toss': { type: 'MP', cost: 3 },
+    'Hint': { type: 'MP', cost: 5 },
+    'Bend Fate': { type: 'MP', cost: 10 },
+    'Rune Spark': { type: 'MP', cost: 5 },
+    'Rune Dull': { type: 'MP', cost: 5 },
+    'Rune Pop': { type: 'MP', cost: 7 },
+    'Rune Guard': { type: 'MP', cost: 7 },
+    'Sleep Mist': { type: 'MP', cost: 7 },
+    'Mirage': { type: 'MP', cost: 5 },
+    'Walk in Dream': { type: 'MP', cost: 7 },
+    'Mind Glance': { type: 'MP', cost: 3 },
+    'Summon Companion': { type: 'MP', cost: 10 },
+    'Beast Instinct': { type: 'MP', cost: 5 },
+    'Big Beast': { type: 'MP', cost: 13 },
+    'Thorn Whip': { type: 'MP', cost: 5 },
+    'Beast Form (Small)': { type: 'MP', cost: 7 },
+    'Tree Form': { type: 'MP', cost: 10 },
+    'Swarm Rush': { type: 'MP', cost: 7 },
+    'Crawling Cover': { type: 'MP', cost: 5 },
+    'Insect Pulse': { type: 'MP', cost: 5 },
+    'Claw Swipe': { type: 'STA', cost: 5 },
+    'Howl': { type: 'STA', cost: 6 },
+    'Wolf Form': { type: 'STA', cost: 9 },
+    'Dragon Breath': { type: 'MP', cost: 10 },
+    'Dragon Scales': { type: 'MP', cost: 5 },
+    'Mighty Breath': { type: 'MP', cost: 13 },
+    'Song of War': { type: 'MP', cost: 5 },
+    'Jeer Song': { type: 'MP', cost: 5 },
+    'Heroic Note': { type: 'MP', cost: 7 },
+    'Throw Potion': { type: 'STA', cost: 5, alt: { type: 'MP', cost: 5 } },
+    'Quick Mix': { type: 'STA', cost: 4, alt: { type: 'MP', cost: 4 } },
+    'Big Flask': { type: 'STA', cost: 7, alt: { type: 'MP', cost: 7 } },
+    'Spark Shot': { type: 'MP', cost: 5 },
+    'Gadget': { type: 'MP', cost: 5 },
+    'Toy Drone': { type: 'MP', cost: 10 },
+    'Purify Bolt': { type: 'MP', cost: 5 },
+    'Resistance Field': { type: 'MP', cost: 7 },
+    'Seal Mark': { type: 'MP', cost: 7 },
+    'Blade Sacrifice': { type: 'STA', cost: 5, alt: { type: 'LP', cost: 4 } },
+    'Blood Shackles': { type: 'MP', cost: 7, alt: { type: 'LP', cost: 5 } },
+    'Blood Rush': { type: 'STA', cost: 7, alt: { type: 'LP', cost: 5 } }
+  };
+
+  ABILITIES.slice(0,2).forEach(a => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    // Cost display
+    const cost = ABILITY_COSTS[a];
+    let costText = '';
+    if (cost) {
+      costText = `<span class="ab-cost" style="margin-left:6px;font-size:.85em;color:#f9d76c;background:rgba(134,241,255,0.12);border-radius:8px;padding:2px 8px;">${cost.cost} ${cost.type}`;
+      if (cost.alt) costText += ` <span style='color:#e9f0ff'>/</span> ${cost.alt.cost} ${cost.alt.type}`;
+      costText += '</span>';
+    }
+    chip.innerHTML = `<span class="ab-name">${a}</span>` + costText;
+    abilWrap.appendChild(chip);
+  });
+
+  /* Image fallback chain */
+  const art=document.getElementById('art');
+  const tryOrder = SLUG ? [`images/${SLUG}.jpg`,`images/${SLUG}.png`] : [];
+  tryOrder.push('images/placeholder.jpg');
+  let idx=0; art.onerror=()=>{ idx++; if(idx<tryOrder.length) art.src=tryOrder[idx]; };
+  art.src = tryOrder[0] || 'images/placeholder.jpg';
+  art.alt = CLASS_NAME || 'class';
+
+  /* Derived values — formulas per your spec */
+  const N = x => Math.max(0, Number(x||0));
+  const STR=N(STATS.STR), AGI=N(STATS.AGI), END=N(STATS.END), SPC=N(STATS.SPC), INT=N(STATS.INT), WIS=N(STATS.WIS);
+
+  // Vitals
+  const lifePoints = 10*END;                 // LP = 10 × END
+  const stamina    = END + STR;              // Stamina = END + STR
+  const initiative = AGI + WIS;              // Initiative = AGI + WIS
+  const mana       = (INT + WIS)*2;          // MP = (INT + WIS) × 2
+  const carryCap   = STR*5;                  // Carrying Capacity = STR × 5
+
+  const VITALS = [
+    ['Life Points (LP)', Math.round(lifePoints)],
+    ['Stamina', Math.round(stamina)],
+    ['Initiative', Math.round(initiative)],
+    ['Mana (MP)', Math.round(mana)],
+    ['Carrying Capacity', Math.round(carryCap)],
+    ['Stamina Recovery/round', Math.max(1, Math.floor(END/3))],
+    ['Mana Recovery/round', Math.max(1, Math.floor((INT+WIS)/6))],
+    ['LP Recovery/short rest', Math.floor(END/2)]
+  ];
+
+  // Combat (all values below this line are divided by 2)
+  const half = v => Math.round(v/2);
+
+  const perception   = half(WIS + SPC);      // Perception = (WIS + SPC) / 2
+  const meleeAttack  = half(STR + AGI);      // Melee Attack = (STR + AGI) / 2
+  const block        = half(STR + END);      // Block = (STR + END) / 2
+  const rangedAttack = half(AGI + SPC);      // Ranged Attack = (AGI + SPC) / 2
+  const magicArcane  = half(INT + SPC);      // Magic Attack (Arcane) = (INT + SPC) / 2
+  const magicSpirit  = half(WIS + END);      // Magic Attack (Spiritual) = (WIS + END) / 2
+  const dodge        = half(AGI + SPC);      // Dodge = (AGI + SPC) / 2
+
+  const COMBAT = [
+    ['Perception', perception],
+    ['Melee Attack', meleeAttack],
+    ['Block', block],
+    ['Ranged Attack', rangedAttack],
+    ['Magic Attack (Arcane)', magicArcane],
+    ['Magic Attack (Spiritual)', magicSpirit],
+    ['Dodge', dodge]
+  ];
+
+  function renderGrid(id, entries){
+    const grid=document.getElementById(id); grid.innerHTML='';
+    entries.forEach(([k,v])=>{
+      const c=document.createElement('div'); c.className='card';
+      c.innerHTML=`<div class="k">${k}</div><div class="v">${v}</div>`;
+      grid.appendChild(c);
+    });
+  }
+  renderGrid('vitalGrid', VITALS);
+  renderGrid('combatGrid', COMBAT);
+
+  /* Traits with weights */
+  const TRAITS   = (window.TRAITS || {});
+  const WEIGHTS  = { low:.35, middle:.25, high:.20, s:.10, random:.10 };
+  const labels   = {low:'🟢 Low', middle:'🟡 Mid', high:'🟠 High', s:'🟣 S', random:'🎲 Random'};
+  const tierNum  = {low:1,middle:2,high:3,s:'S',random:'∼'};
+  const rnd      = m => Math.floor(Math.random()*m);
+  const pick     = arr => arr[rnd(arr.length)];
+
+  function rollTierWeighted(){
+    const order=['low','middle','high','s','random'];
+    let r=Math.random(), tier='low';
+    for(const k of order){ const w=WEIGHTS[k]||0; if(r<w){ tier=k; break; } r-=w; }
+    return tier; // Random stays Random (shows its own text)
+  }
+
+  function rollTrait(tier){
+    const list = Array.isArray(TRAITS[tier]) ? TRAITS[tier] : [];
+    return list.length ? pick(list) : {name:'—', desc:'(no entries found)', flavor:''};
+  }
+
+  function frontMarkup(tier,trait){
+    return `
+      <div class="die">ᛉ</div>
+      <div class="tier">${labels[tier]||tier}</div>
+      <div class="tname">${trait.name||'—'}</div>
+      <p class="tdesc">${trait.desc||''}</p>
+      <div class="tflv">${trait.flavor||''}</div>`;
+  }
+
+  let chosen={card1:null, card2:null};
+  const usedNames=new Set();
+
+  function bindFlip(id, frontId){
+    const el=document.getElementById(id); const front=document.getElementById(frontId);
+    if(!el||!front) return;
+    el.addEventListener('click', ()=>{
+      if(el.classList.contains('revealed')) return;
+
+      const otherTier = chosen[id==='card1'?'card2':'card1']?.tier || null;
+
+      // keep flipping until unique name and (optionally) different tier
+      let tier, trait, guard=0;
+      do{
+        tier = rollTierWeighted();
+        // avoid same tier as the other card (optional — remove next 2 lines if duplicates allowed)
+        if(otherTier && tier===otherTier) continue;
+
+        trait = rollTrait(tier);
+        guard++;
+        if(guard>60) break;
+      }while(usedNames.has(trait.name));
+
+      chosen[id] = {tier, trait};
+      usedNames.add(trait.name);
+      front.innerHTML = frontMarkup(tier, trait);
+      el.classList.add('revealed');
+    });
+
+    el.addEventListener('keydown', e=>{
+      if((e.key==='Enter'||e.key===' ')&&!el.classList.contains('revealed')){
+        e.preventDefault(); el.click();
+      }
+    });
+  }
+  bindFlip('card1','front1'); bindFlip('card2','front2');
+
+</script>
+
+</body>
+</html>
